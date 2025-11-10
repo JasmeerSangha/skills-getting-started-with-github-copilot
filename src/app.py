@@ -19,7 +19,57 @@ current_dir = Path(__file__).parent
 app.mount("/static", StaticFiles(directory=os.path.join(Path(__file__).parent,
           "static")), name="static")
 
-# In-memory activity database
+# In-memory activity database additions
+additional_activities = {
+    "Soccer Team": {
+        "description": "Outdoor soccer practices and matches",
+        "schedule": "Tuesdays and Thursdays, 4:00 PM - 6:00 PM",
+        "max_participants": 22,
+        "participants": ["liam@mergington.edu", "noah@mergington.edu"]
+    },
+    "Basketball Club": {
+        "description": "Skill development and intramural games",
+        "schedule": "Wednesdays and Fridays, 5:00 PM - 7:00 PM",
+        "max_participants": 15,
+        "participants": ["ava@mergington.edu"]
+    },
+    "Art Club": {
+        "description": "Drawing, painting and mixed media workshops",
+        "schedule": "Mondays, 3:30 PM - 5:00 PM",
+        "max_participants": 20,
+        "participants": ["zoe@mergington.edu"]
+    },
+    "Drama Club": {
+        "description": "Theater rehearsals and performances",
+        "schedule": "Thursdays, 4:00 PM - 6:00 PM",
+        "max_participants": 25,
+        "participants": ["lucas@mergington.edu"]
+    },
+    "Debate Team": {
+        "description": "Competitive debate practice and tournaments",
+        "schedule": "Tuesdays, 6:00 PM - 8:00 PM",
+        "max_participants": 12,
+        "participants": ["mia@mergington.edu"]
+    },
+    "Math Olympiad": {
+        "description": "Advanced problem solving and math competitions",
+        "schedule": "Fridays, 4:00 PM - 5:30 PM",
+        "max_participants": 15,
+        "participants": ["ethan@mergington.edu"]
+    }
+}
+
+@app.on_event("startup")
+def _merge_additional_activities():
+    # Merge additional_activities into the in-memory activities when the app starts.
+    # Preserve any existing activity definitions (do not overwrite).
+    global activities
+    # activities will be defined later in the module; get or create it.
+    activities = globals().get("activities", {})
+    for name, info in additional_activities.items():
+        if name not in activities:
+            activities[name] = info
+    globals()["activities"] = activities
 activities = {
     "Chess Club": {
         "description": "Learn strategies and compete in chess tournaments",
@@ -62,6 +112,11 @@ def signup_for_activity(activity_name: str, email: str):
     # Get the specific activity
     activity = activities[activity_name]
 
+    
+    # Verify studnet is not already signed up
+    if email in activity["participants"]:
+        raise HTTPException(status_code=400, detail="Student already signed up for this activity")
+    
     # Add student
     activity["participants"].append(email)
     return {"message": f"Signed up {email} for {activity_name}"}
